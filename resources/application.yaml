@@ -1,0 +1,9 @@
+host: 
+port: 5432
+schema: public
+databaseName: postgres
+user: 
+password: 
+db_timeout: 90
+postgres_driver: postgres
+bunch: 10

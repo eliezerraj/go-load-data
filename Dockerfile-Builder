@@ -1,0 +1,19 @@
+# docker build -t go_load_data . -f Dockerfile-Builder
+# docker run -dit --name go_load_data
+
+FROM golang:1.17 As builder
+WORKDIR /app
+
+COPY . .
+WORKDIR /app/cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-w' -o go_load_data
+
+FROM scratch
+
+WORKDIR /app
+COPY --from=builder /app/cmd/go_load_data .
+
+WORKDIR /app/resources
+COPY --from=builder /app/resources/application.yaml .
+
+CMD ["/app/go_load_data"]
