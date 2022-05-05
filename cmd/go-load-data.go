@@ -86,7 +86,7 @@ func main() {
 	log.Printf("Starting load-data 1.0")
 
 	start := time.Now()
-	foo := []string{"group-a","group-b","group-c","group-d","group-e","group-f","group-g","group-h","group-i","group-j"}
+	foo := []string{"group-a","group-b","group-c","group-d","group-e"}
 
 	repository_rds, err := repository.NewDatabaseHelper(rds_config)
 	if err != nil {

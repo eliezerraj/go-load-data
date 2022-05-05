@@ -28,12 +28,6 @@ func (b BalanceRepositoryRDSImpl) Save(ctx context.Context, balance core.Balance
 
 	client, _ := b.DatabaseHelper.GetConnection(ctx)
 
-	tx, err := client.Begin()
-    if err != nil {
-		log.Printf("Error Database - 2 : ", err) 
-        return core.Balance{}, err
-    }
-
 	stmt, err := client.Prepare(`INSERT INTO balance ( balance_id, 
 														 account, 
 														 amount, 
@@ -51,11 +45,8 @@ func (b BalanceRepositoryRDSImpl) Save(ctx context.Context, balance core.Balance
 						time.Now(),
 						balance.Description)
  	if err != nil {
-		tx.Rollback()
 		log.Printf("Error Database - 2 : ", err) 
 		return core.Balance{}, err
 	}
-	defer stmt.Close()
-	tx.Commit()
 	return balance , nil
 }
