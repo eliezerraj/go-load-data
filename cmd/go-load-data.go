@@ -8,6 +8,9 @@ import (
 	"os"
 	"strconv"
 	"context"
+	"net/http"
+	"bytes"
+	"encoding/json"
 
 	"github.com/spf13/viper"
 
@@ -62,6 +65,36 @@ func worker(id string, bunch int, repo repository.BalanceRepository) {
     fmt.Printf("Worker %v done\n", id)
 }
 
+func worker_http(id string, bunch int,host string ,client http.Client) {
+    fmt.Printf("worker_http %v %v starting\n", id, bunch)
+	host = host + "/balance/save"
+	for x := 1; x < bunch; x++{
+		balance := NewBalance(x)
+		payload := new(bytes.Buffer)
+		json.NewEncoder(payload).Encode(balance)
+		req_post , err := http.NewRequest("POST", host, payload)
+		if err != nil {
+			log.Println("Error http.NewRequest : ", err)
+			panic(err)
+		}
+
+		req_post.Header = http.Header{
+			"Accept_Language": []string{"pt-BR"},
+			"jwt": []string{"cookie"},
+			"Content-Type": []string{"application/json"},
+		}
+		resp, err := client.Do(req_post)
+		if err != nil {
+			log.Println("Error doing POST : ", err)
+			panic(err)
+		}
+		defer resp.Body.Close()
+		time.Sleep(time.Millisecond * time.Duration(1000))
+	}
+
+    fmt.Printf("worker_http %v done\n", id)
+}
+
 func NewBalance(i int) core.Balance{
 	acc := "acc-" + strconv.Itoa(i)
 	description := "COOKIE-"+ strconv.Itoa(i) + " - OK"
@@ -77,8 +110,9 @@ func NewBalance(i int) core.Balance{
 }
 
 func init() {
-	fmt.Println("init")
+	log.Printf("------------------------")
 	Configuration()
+	log.Printf("------------------------")
 }
 
 func main() {
@@ -86,25 +120,47 @@ func main() {
 	log.Printf("Starting load-data 1.0")
 
 	start := time.Now()
-	foo := []string{"group-a","group-b","group-c","group-d","group-e"}
+	grp := []string{"group-a"}
 
-	repository_rds, err := repository.NewDatabaseHelper(rds_config)
-	if err != nil {
-		log.Print("Erro na abertura do Database", err)
-		panic(err)
+	if (rds_config.Type == "rest"){
+		log.Printf("------------------------")
+		log.Printf("REST (%v) ", rds_config.Url)
+		log.Printf("-----------------------")
+		client := http.Client{}
+
+		var wg sync.WaitGroup
+		wg.Add(len(grp))
+		for _, f := range grp{
+			go func(f string, b int, h string ,c http.Client){
+				worker_http(f, b, h, c)
+				wg.Done()
+			}(f, rds_config.Bunch, rds_config.Url, client)
+		}
+		wg.Wait()
+
+	}else {
+		log.Printf("------------------------")
+		log.Printf("DATABASE")
+		log.Printf("-----------------------")
+		repository_rds, err := repository.NewDatabaseHelper(rds_config)
+		if err != nil {
+			log.Print("Erro na abertura do Database", err)
+			panic(err)
+		}
+		repo := repository.NewBalanceRepositoryRDS(repository_rds)
+	
+		var wg sync.WaitGroup
+		wg.Add(len(grp))
+	
+		for _, f := range grp{
+			go func(f string, b int, r repository.BalanceRepository){
+				worker(f, b, r)
+				wg.Done()
+			}(f, rds_config.Bunch, repo)
+		}
+		wg.Wait()
+		repository_rds.CloseConnection()
 	}
-	repo := repository.NewBalanceRepositoryRDS(repository_rds)
 
-    var wg sync.WaitGroup
-	wg.Add(len(foo))
-
-	for _, f := range foo{
-		go func(f string, b int, r repository.BalanceRepository){
-			worker(f, b, r)
-			wg.Done()
-		}(f, rds_config.Bunch, repo)
-	}
-	wg.Wait()
-	repository_rds.CloseConnection()
 	fmt.Printf("Time lapse : %s \n", time.Since(start))
 }

@@ -23,4 +23,6 @@ type DatabaseRDS struct {
 	Db_timeout			int		`json:"db_timeout"`
 	Postgres_Driver		string `json:"postgres_driver"`
 	Bunch				int		`json:"bunch"`
+	Url					string `json:"url"`
+	Type				string `json:"type"`
 }
