@@ -6,7 +6,8 @@ import (
 )
 
 type Balance struct {
-	Id					int32		`json:"id"`
+	Id					string		`json:"id"`
+	BalanceId			string		`json:"balance_id"`
     Account 			string 		`json:"account"`
 	Amount				int32 		`json:"amount"`
     DateBalance  		time.Time 	`json:"date_balance"`

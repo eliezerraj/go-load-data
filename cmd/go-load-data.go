@@ -66,12 +66,15 @@ func worker(id string, bunch int, repo repository.BalanceRepository) {
 }
 
 func worker_http(id string, bunch int,host string ,client http.Client) {
-    fmt.Printf("worker_http %v %v starting\n", id, bunch)
+
 	host = host + "/balance/save"
+	fmt.Printf("worker_http %v %v %v starting\n", id, bunch, host)
+
 	for x := 1; x < bunch; x++{
 		balance := NewBalance(x)
 		payload := new(bytes.Buffer)
 		json.NewEncoder(payload).Encode(balance)
+		log.Println("...1.1", payload)
 		req_post , err := http.NewRequest("POST", host, payload)
 		if err != nil {
 			log.Println("Error http.NewRequest : ", err)
@@ -89,6 +92,13 @@ func worker_http(id string, bunch int,host string ,client http.Client) {
 			panic(err)
 		}
 		defer resp.Body.Close()
+
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				log.Println("Erro Close :",err)
+			}
+		}()
 		time.Sleep(time.Millisecond * time.Duration(1000))
 	}
 
@@ -100,9 +110,10 @@ func NewBalance(i int) core.Balance{
 	description := "COOKIE-"+ strconv.Itoa(i) + " - OK"
 	
 	balance := core.Balance{
-		Id:    int32(i),
-		Account: acc,
-		Amount: 1,
+		Id:    		strconv.Itoa(i),
+		BalanceId:  strconv.Itoa(i),
+		Account: 	acc,
+		Amount: 	1,
 		DateBalance: time.Now(),
 		Description: description,
 	}

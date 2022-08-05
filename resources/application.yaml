@@ -6,6 +6,6 @@ user:
 password: 
 db_timeout: 90
 postgres_driver: postgres
-bunch: 10
-url: http://localhost:8900
+bunch: 1000
+url: http://k8s-testa-svcgores-e700746cd5-5c837d352ae930e7.elb.us-east-2.amazonaws.com:8900
 type: rest
